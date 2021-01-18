@@ -1,6 +1,8 @@
 #ifndef AES_HPP
 #define AES_HPP
 
+#define BMP_HEADER_SIZE 56
+
 #include <cstdint>
 #include <string>
 

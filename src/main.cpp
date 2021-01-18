@@ -1,5 +1,4 @@
 #include "../header/aes.hpp"
-#include "../header/bmp.hpp"
 #include <iostream>
 #include <fstream>
 
@@ -28,19 +27,15 @@ int main(int argc, char* argv[]) {
                             return 1;
                     case 't':
                         flag |= TEXT;
-                        std::cout << "set flag t\n";
                         break;
                     case 'p':
                         flag |= PIC;
-                        std::cout << "set flag p\n";
                         break;
                     case 'd':
                         flag |= DEC;
-                        std::cout << "set flag d\n";
                         break;
                     case 'e':
                         flag |= ENC; 
-                        std::cout << "set flag e\n";
                         break;
                     default:
                         std::cout << "Unknown flag " << *c << std::endl;

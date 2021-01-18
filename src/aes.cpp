@@ -27,7 +27,7 @@ uint8_t* AES::encrypt(uint8_t *s) {
     std::unordered_map<uint8_t*, uint8_t*> map;
 
     if (map.empty() || map.find(s) == map.end())
-    tab = createState(S);
+    tab = createState(s);
 
     addRoundKey(tab, 0);
     for (int i = 1; i < nr; ++i) {
@@ -71,17 +71,29 @@ uint8_t* AES::decrypt(uint8_t *s) {
 
 void AES::readFile(int flag, const char *fFile, const char *sFile, char *key) {
     int readSize;
+    int filesize;
     uint8_t *buf;
 
     readKey(flag, key); 
-    FILE *in = fopen(fFile, "r");
-    FILE *out = fopen(sFile, "w");
     
-    buf = new uint8_t[16];
+    FILE *in = fopen(fFile, "rb");
+    FILE *out = fopen(sFile, "w");
     if (in == NULL || out == NULL) 
         std::cout << "Error: can't open\n";
 
-    std::cout << ((flag & ENC) ? "Encryption" : "Decryption")<< std::endl;
+    if (flag & PIC) {
+        fseek(in, 0, SEEK_END);
+
+        filesize = ftell(in);
+        //return pointer to position after bmp header
+
+        fseek(in, 0, SEEK_SET);
+        buf = new uint8_t[BMP_HEADER_SIZE];
+        fread(buf, 1, BMP_HEADER_SIZE, in);
+        fwrite(buf, 1, BMP_HEADER_SIZE, out);
+        delete [] buf;
+    }
+    buf = new uint8_t[16];
     while ((readSize = std::fread(buf, 1, 16, in)) > 0) {
         if (readSize != 16) {
             memset(buf + readSize, 0, 16 - readSize);
@@ -94,7 +106,17 @@ void AES::readFile(int flag, const char *fFile, const char *sFile, char *key) {
         else
             fwrite(buf, 1, 16, out);
     }
-    std::cout << "Done\n";
+    if ((flag & PIC) ) {
+        if ((flag & ENC) && (filesize - BMP_HEADER_SIZE % 16) != 0) {
+            filesize += (filesize - BMP_HEADER_SIZE) % 16;
+            fseek(out, 2, SEEK_SET);
+            fwrite(&filesize, 1, sizeof(filesize), out);
+        } else if ((flag & DEC) == 1 && buf[14] == 0 && buf[15] < 0x10) {
+            filesize -= (int)(16 - buf[15]);
+            fseek(out, 2, SEEK_SET);
+            fwrite(&filesize, 1, sizeof(filesize), out);
+        }
+    }
     delete [] buf;
     fclose(in);
     fclose(out);
@@ -111,7 +133,7 @@ void AES::readKey(int flag, char *key) {
     }
 
     if (flag & ENC)
-        std::cout << "Encrypt key: " << key << std::endl;
+        std::cout << key << std::endl;
     keyExpansion(key);
 }
 
